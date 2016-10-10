@@ -1,0 +1,3 @@
+Input should be in the format as following:
+5 (0 3 200 3) (0 9 500 2) (0 20 500 1) (100 1 100 3) (100 100 500 1)
+

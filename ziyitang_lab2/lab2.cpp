@@ -1,7 +1,7 @@
 /*
  *	Operating System Lab 2
  *	Created by Ziyi Tang
- *
+ *	Scheduler
  */
 
 //#include <bits/stdc++.h>
@@ -31,11 +31,12 @@ struct Process {
 	int states[3]; // Ready, Runninng, Blocked
 	int running_time; // Keep track of running time
 	int cur_state; // Current State
+	int cur_cpu_burst; // Current burst time
 	int io_time; // Total io time
 	int waiting_time; // Total waiting time
 	int finish_time; // Finishing time
 	Process (int idx, int A, int B, int C, int M) : 
-		A_(A), B_(B), C_(C), M_(M), cur_state(-1), io_time(0), waiting_time(0), running_time(0), idx_(idx), finish_time(-1) {
+		A_(A), B_(B), C_(C), M_(M), cur_state(-1), io_time(0), waiting_time(0), running_time(0), idx_(idx), finish_time(-1), cur_cpu_burst(0) {
 		memset(states,0,sizeof(states));
 	}
 	void printTuple() const {
@@ -72,7 +73,6 @@ struct SummaryData {
 	void gather(int sz, int timestamp){
 		finish_time = timestamp-1;
 		cpu_util_time /= finish_time;
-		cout << "io util" << io_util_time << " " << finish_time << endl;
 		io_util_time /= finish_time;
 		avg_wait_time /= sz;
 		avg_turn_time /= sz;
@@ -118,7 +118,7 @@ void printInfo(string algo, const vector<Process>& processes, const SummaryData&
 }
 
 // First Come First Serve
-void FCFS(vector<Process> allProcesses){
+void FCFS(vector<Process> allProcesses, string name){
 	// Priority Queue for Ready Time and Process Index
 	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
 	// Init SummaryData
@@ -197,7 +197,7 @@ void FCFS(vector<Process> allProcesses){
 			cout << endl;
 			int sz = allProcesses.size();
 			summary.gather(sz, timestamp);
-			printInfo("First Come First Served", allProcesses, summary);
+			printInfo(name, allProcesses, summary);
 			break;
 		}
 
@@ -228,8 +228,135 @@ void FCFS(vector<Process> allProcesses){
 		timestamp++;
 	}
 }
-void RR(vector<Process> allProcesses){
 
+// Round Robbin
+// Similar to FCFS, with preemption
+void RR(vector<Process> allProcesses, string name, int quantum){
+	// Priority Queue for Ready Time and Process Index
+	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
+	// Init SummaryData
+	SummaryData summary = SummaryData();
+	// No process is running right now
+	int cur_process = -1;
+	// Keep track of the unstarted processes
+	int pt = 0;
+	int timestamp = 0;
+	// Keep track of preempt status
+	vector<int> preempt(allProcesses.size(), quantum);
+	while(1){
+		// Flag indicating that every process is terminated
+		bool TERMINATED = true;
+		// Check status for all processes
+		// Make one move
+		printf("Before cycle   %d:", timestamp);
+		bool IO = false;
+		for(int i = 0; i < allProcesses.size(); i++){
+			Process* now = &allProcesses[i];
+			// cout << "sum: " << now->states[0] << " " << now->states[1] << " " << now->states[2] << endl;
+			cout << "    ";
+			// Not Created
+			if(now->cur_state == -1){
+				cout << "unstarted 0";
+				TERMINATED = false;
+				continue;
+			}
+			// Terminated
+			if(now->cur_state == 3){
+				cout << "terminated 0";
+				if(now->finish_time == -1){
+					now->finish_time = timestamp-1;
+					summary.avg_turn_time += now->finish_time-now->A_;
+				}
+				continue;
+			}
+
+			// If process is running or blocking
+			TERMINATED = false;
+			int cur_state = now->cur_state;
+			if(cur_state == 1){
+				preempt[now->idx_] = min(preempt[now->idx_], now->states[cur_state]);
+				cout << "running "; cout << preempt[now->idx_]--;
+				(now->states)[cur_state]--;
+				now->running_time++;
+				summary.cpu_util_time++; // Utilize CPU
+				if(now->states[cur_state] == 0){
+					// The current cpu burst time is reached
+					if(now->running_time == allProcesses[i].C_){
+						// Terminate this process
+						now->cur_state = 3;
+					} else {
+						// Blocking
+						now->cur_state = 2;
+					}
+					// Restore the preempt indicator
+					preempt[now->idx_] = quantum;
+					// No process is running
+					cur_process = -1;
+				}
+				// Preempt the process
+				if(preempt[now->idx_] == 0){
+					preempt[now->idx_] = quantum;
+					cur_process = -1;
+					now->cur_state = 0;
+					readyQueue.push(make_pair(timestamp, now->idx_));
+				}
+			} else if(cur_state == 2){
+				cout << "blocked "; cout << (now->states)[cur_state]--;
+				now->io_time++;
+				IO = true; // Some process is waiting for IO
+				if(now->states[cur_state] == 0){
+					// Go to the ready list
+					now->cur_state = 0;
+					readyQueue.push(make_pair(timestamp, now->idx_));
+				}
+			} else{
+				// Otherwise, the process is in ready state
+				now->waiting_time++;
+				summary.avg_wait_time++;
+				cout << "ready 0";
+			}
+		}
+		if(IO) summary.io_util_time++; // Utilize I/O
+
+		// All processes are terminated
+		if(TERMINATED == true) {
+			cout << endl;
+			int sz = allProcesses.size();
+			summary.gather(sz, timestamp);
+			printInfo(name, allProcesses, summary);
+			break;
+		}
+
+		// Add processes into ready list if they are created at this time
+		while(pt < allProcesses.size() && allProcesses[pt].A_ == timestamp){
+			// cout << "add" << allProcesses[pt].A_ << " " << allProcesses[pt].B_ << " " << allProcesses[pt].C_ << " " << allProcesses[pt].M_ << endl;
+			allProcesses[pt].cur_state = 0;
+			readyQueue.push(make_pair(timestamp, allProcesses[pt].idx_));
+			pt++;
+		}
+
+		// No process is running, add a process that is ready
+		if(cur_process == -1){
+			// No process is ready
+			if(!readyQueue.empty()) {
+				int nowIdx = readyQueue.top().second; readyQueue.pop();
+				Process* now = &allProcesses[nowIdx];
+				// cout << now.A_ << " " << now.B_ << " " << now.C_ << " " << now.M_ << endl;
+				if(now->states[1] == 0){
+					// Not enqueued by preemption
+					int cpu_burst = min(now->C_-now->running_time, randomMod_feed(now->B_));
+					int io_burst = now->M_ * cpu_burst;
+					now->states[1] = cpu_burst;
+					now->states[2] = io_burst;
+					now->cur_cpu_burst = cpu_burst;
+				}
+				now->cur_state = 1;
+				cur_process = nowIdx;
+			}
+		}
+		cout << endl;
+		timestamp++;
+	}
 }
 void UNI(vector<Process> allProcesses){
 
@@ -268,12 +395,12 @@ int main(){
 		allProcesses[i].printTuple();
 	}
 	cout << endl;
-	sort(allProcesses.begin(), allProcesses.end());
+	stable_sort(allProcesses.begin(), allProcesses.end());
 	cout << "The (sorted) input is: " << n;
 	for(int i = 0; i < allProcesses.size(); i++){
 		cout << " ";
 		allProcesses[i].printTuple();
-		allProcesses[i].idx_ = i;
+		allProcesses[i].idx_ = i; // Re-indexing
 	}
 	cout << endl;
 	printf("\nThis detailed printout gives the state and remaining burst for each process\n");
@@ -283,6 +410,7 @@ int main(){
 		randomNums.push(num);
 	}
 	fclose(stdin);
-	FCFS(allProcesses);
+	// FCFS(allProcesses, "First Come First Served");
+	RR(allProcesses, "Round Robbin", 2);
 	return 0;
 }
