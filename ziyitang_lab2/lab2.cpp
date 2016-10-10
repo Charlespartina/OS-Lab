@@ -21,10 +21,11 @@
 #include <queue>
 typedef long long ll;
 using namespace std;
+queue<ll> randomNums_static;
 queue<ll> randomNums;
 bool verbose;
 #define VERBOSE if(verbose)
-
+#define RESET randomNums = randomNums_static
 // Process Class
 struct Process {
 	int idx_;
@@ -118,8 +119,27 @@ void printInfo(string algo, const vector<Process>& processes, const SummaryData&
 	summary.printSummary();
 }
 
+void Init(vector<Process>& allProcesses) {
+	cout << "The original input was: " << allProcesses.size();
+	for(int i = 0; i < allProcesses.size(); i++){
+		cout << " ";
+		allProcesses[i].printTuple();
+	}
+	cout << endl;
+	stable_sort(allProcesses.begin(), allProcesses.end());
+	cout << "The (sorted) input is: " << allProcesses.size();
+	for(int i = 0; i < allProcesses.size(); i++){
+		cout << " ";
+		allProcesses[i].printTuple();
+		allProcesses[i].idx_ = i; // Re-indexing
+	}
+	cout << endl;
+	VERBOSE printf("\nThis detailed printout gives the state and remaining burst for each process\n");
+}
+
 // First Come First Serve
 void FCFS(vector<Process> allProcesses, string name){
+	Init(allProcesses);
 	// Priority Queue for Ready Time and Process Index
 	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
 	// Init SummaryData
@@ -237,6 +257,7 @@ void FCFS(vector<Process> allProcesses, string name){
 // Round Robbin
 // Similar to FCFS, with preemption
 void RR(vector<Process> allProcesses, string name, int quantum){
+	Init(allProcesses);
 	// Priority Queue for Ready Time and Process Index
 	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
 	// Init SummaryData
@@ -370,6 +391,7 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 
 // Uniprogramming
 void UNI(vector<Process> allProcesses, string name){
+	Init(allProcesses);
 	// Priority Queue for Ready Time and Process Index
 	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
 	// Init SummaryData
@@ -488,6 +510,7 @@ void UNI(vector<Process> allProcesses, string name){
 
 // Shortest Job First
 void SJF(vector<Process> allProcesses, string name){
+	Init(allProcesses);
 	// Priority Queue for Ready Time and Process Index
 	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
 	// Init SummaryData
@@ -633,7 +656,7 @@ int main(int argc, char* argv[]){
 			if(tmp[0] == '(')
 				tmp.erase(tmp.begin());
 			if(tmp[tmp.size()-1] == ')')
-				tmp.pop_back();
+				tmp.erase(tmp.end()-1);
 			int val = 0;
 			istringstream ss2(tmp);
 			ss2 >> val;
@@ -642,30 +665,15 @@ int main(int argc, char* argv[]){
 		allProcesses.push_back(Process(i, nums[0], nums[1], nums[2], nums[3]));
 		//cout << nums[0] << " " << nums[1] << " " << nums[2] << " " << nums[3] << endl;
 	}
-	cout << "The original input was: " << n;
-	for(int i = 0; i < allProcesses.size(); i++){
-		cout << " ";
-		allProcesses[i].printTuple();
-	}
-	cout << endl;
-	stable_sort(allProcesses.begin(), allProcesses.end());
-	cout << "The (sorted) input is: " << n;
-	for(int i = 0; i < allProcesses.size(); i++){
-		cout << " ";
-		allProcesses[i].printTuple();
-		allProcesses[i].idx_ = i; // Re-indexing
-	}
-	cout << endl;
-	VERBOSE printf("\nThis detailed printout gives the state and remaining burst for each process\n");
 	freopen("random-numbers", "r", stdin);
 	int num = 0;
 	while(cin >> num){
-		randomNums.push(num);
+		randomNums_static.push(num);
 	}
 	fclose(stdin);
-	//FCFS(allProcesses, "First Come First Served");
-	//RR(allProcesses, "Round Robbin", 2);
-	//UNI(allProcesses, "Uniprogramming");
-	SJF(allProcesses, "Shortest Job First");
+	RESET; FCFS(allProcesses, "First Come First Served");
+	RESET; RR(allProcesses, "Round Robbin", 2); 
+	RESET; UNI(allProcesses, "Uniprogramming");
+	RESET; SJF(allProcesses, "Shortest Job First");
 	return 0;
 }
