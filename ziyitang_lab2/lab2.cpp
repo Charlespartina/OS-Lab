@@ -476,7 +476,7 @@ void UNI(vector<Process> allProcesses, string name){
 
 // Shortest Job First
 void SJF(vector<Process> allProcesses){
-
+	
 }
 
 int main(){
