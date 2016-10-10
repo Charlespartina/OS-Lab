@@ -21,9 +21,9 @@
 #include <queue>
 typedef long long ll;
 using namespace std;
-
 queue<ll> randomNums;
 bool verbose;
+#define VERBOSE if(verbose)
 
 // Process Class
 struct Process {
@@ -105,7 +105,7 @@ int randomMod_feed(int B){
 
 // Print Info
 void printInfo(string algo, const vector<Process>& processes, const SummaryData& summary){
-	printf("The scheduling algorithm used was %s\n\n", algo.c_str());
+	printf("\nThe scheduling algorithm used was %s\n\n", algo.c_str());
 	for(int i = 0; i < processes.size(); i++){
 		printf("Process %d:\n", i);
 		const Process& now = processes[i];
@@ -134,21 +134,21 @@ void FCFS(vector<Process> allProcesses, string name){
 		bool TERMINATED = true;
 		// Check status for all processes
 		// Make one move
-		printf("Before cycle   %d:", timestamp);
+		VERBOSE printf("Before cycle   %d:", timestamp);
 		bool IO = false;
 		for(int i = 0; i < allProcesses.size(); i++){
 			Process* now = &allProcesses[i];
 			//cout << "sum: " << now->states[0] << " " << now->states[1] << " " << now->states[2] << endl;
-			cout << "    ";
+			VERBOSE cout << "    ";
 			// Not Created
 			if(now->cur_state == -1){
-				cout << "unstarted 0";
+				VERBOSE cout << "unstarted 0";
 				TERMINATED = false;
 				continue;
 			}
 			// Terminated
 			if(now->cur_state == 3){
-				cout << "terminated 0";
+				VERBOSE cout << "terminated 0";
 				if(now->finish_time == -1){
 					now->finish_time = timestamp-1;
 					summary.avg_turn_time += now->finish_time-now->A_;
@@ -160,7 +160,9 @@ void FCFS(vector<Process> allProcesses, string name){
 			TERMINATED = false;
 			int cur_state = now->cur_state;
 			if(cur_state == 1){
-				cout << "running "; cout << (now->states)[cur_state]--;
+				VERBOSE cout << "running "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
 				now->running_time++;
 				summary.cpu_util_time++; // Utilize CPU
 				if(now->states[cur_state] == 0){
@@ -176,7 +178,9 @@ void FCFS(vector<Process> allProcesses, string name){
 					cur_process = -1;
 				}
 			} else if(cur_state == 2){
-				cout << "blocked "; cout << (now->states)[cur_state]--;
+				VERBOSE cout << "blocked "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
 				now->io_time++;
 				IO = true; // Some process is waiting for IO
 				if(now->states[cur_state] == 0){
@@ -188,14 +192,14 @@ void FCFS(vector<Process> allProcesses, string name){
 				// Otherwise, the process is in ready state
 				now->waiting_time++;
 				summary.avg_wait_time++;
-				cout << "ready 0";
+				VERBOSE cout << "ready 0";
 			}
 		}
 		if(IO) summary.io_util_time++; // Utilize I/O
 
 		// All processes are terminated
 		if(TERMINATED == true) {
-			cout << endl;
+			VERBOSE cout << endl;
 			int sz = allProcesses.size();
 			summary.gather(sz, timestamp);
 			printInfo(name, allProcesses, summary);
@@ -225,7 +229,7 @@ void FCFS(vector<Process> allProcesses, string name){
 				cur_process = nowIdx;
 			}
 		}
-		cout << endl;
+		VERBOSE cout << endl;
 		timestamp++;
 	}
 }
@@ -249,21 +253,21 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 		bool TERMINATED = true;
 		// Check status for all processes
 		// Make one move
-		printf("Before cycle   %d:", timestamp);
+		VERBOSE printf("Before cycle   %d:", timestamp);
 		bool IO = false;
 		for(int i = 0; i < allProcesses.size(); i++){
 			Process* now = &allProcesses[i];
 			// cout << "sum: " << now->states[0] << " " << now->states[1] << " " << now->states[2] << endl;
-			cout << "    ";
+			VERBOSE cout << "    ";
 			// Not Created
 			if(now->cur_state == -1){
-				cout << "unstarted 0";
+				VERBOSE cout << "unstarted 0";
 				TERMINATED = false;
 				continue;
 			}
 			// Terminated
 			if(now->cur_state == 3){
-				cout << "terminated 0";
+				VERBOSE cout << "terminated 0";
 				if(now->finish_time == -1){
 					now->finish_time = timestamp-1;
 					summary.avg_turn_time += now->finish_time-now->A_;
@@ -276,7 +280,9 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 			int cur_state = now->cur_state;
 			if(cur_state == 1){
 				preempt[now->idx_] = min(preempt[now->idx_], now->states[cur_state]);
-				cout << "running "; cout << preempt[now->idx_]--;
+				VERBOSE cout << "running "; 
+				VERBOSE cout << preempt[now->idx_];
+				preempt[now->idx_]--;
 				(now->states)[cur_state]--;
 				now->running_time++;
 				summary.cpu_util_time++; // Utilize CPU
@@ -302,7 +308,9 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 					readyQueue.push(make_pair(timestamp, now->idx_));
 				}
 			} else if(cur_state == 2){
-				cout << "blocked "; cout << (now->states)[cur_state]--;
+				VERBOSE cout << "blocked "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
 				now->io_time++;
 				IO = true; // Some process is waiting for IO
 				if(now->states[cur_state] == 0){
@@ -314,14 +322,14 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 				// Otherwise, the process is in ready state
 				now->waiting_time++;
 				summary.avg_wait_time++;
-				cout << "ready 0";
+				VERBOSE cout << "ready 0";
 			}
 		}
 		if(IO) summary.io_util_time++; // Utilize I/O
 
 		// All processes are terminated
 		if(TERMINATED == true) {
-			cout << endl;
+			VERBOSE cout << endl;
 			int sz = allProcesses.size();
 			summary.gather(sz, timestamp);
 			printInfo(name, allProcesses, summary);
@@ -355,7 +363,7 @@ void RR(vector<Process> allProcesses, string name, int quantum){
 				cur_process = nowIdx;
 			}
 		}
-		cout << endl;
+		VERBOSE cout << endl;
 		timestamp++;
 	}
 }
@@ -376,21 +384,21 @@ void UNI(vector<Process> allProcesses, string name){
 		bool TERMINATED = true;
 		// Check status for all processes
 		// Make one move
-		printf("Before cycle   %d:", timestamp);
+		VERBOSE printf("Before cycle   %d:", timestamp);
 		bool IO = false;
 		for(int i = 0; i < allProcesses.size(); i++){
 			Process* now = &allProcesses[i];
 			//cout << "sum: " << now->states[0] << " " << now->states[1] << " " << now->states[2] << endl;
-			cout << "    ";
+			VERBOSE cout << "    ";
 			// Not Created
 			if(now->cur_state == -1){
-				cout << "unstarted 0";
+				VERBOSE cout << "unstarted 0";
 				TERMINATED = false;
 				continue;
 			}
 			// Terminated
 			if(now->cur_state == 3){
-				cout << "terminated 0";
+				VERBOSE cout << "terminated 0";
 				if(now->finish_time == -1){
 					now->finish_time = timestamp-1;
 					summary.avg_turn_time += now->finish_time-now->A_;
@@ -402,7 +410,9 @@ void UNI(vector<Process> allProcesses, string name){
 			TERMINATED = false;
 			int cur_state = now->cur_state;
 			if(cur_state == 1){
-				cout << "running "; cout << (now->states)[cur_state]--;
+				VERBOSE cout << "running "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
 				now->running_time++;
 				summary.cpu_util_time++; // Utilize CPU
 				if(now->states[cur_state] == 0){
@@ -417,7 +427,9 @@ void UNI(vector<Process> allProcesses, string name){
 					}
 				}
 			} else if(cur_state == 2){
-				cout << "blocked "; cout << (now->states)[cur_state]--;
+				VERBOSE cout << "blocked "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
 				now->io_time++;
 				IO = true; // Some process is waiting for IO
 				if(now->states[cur_state] == 0){
@@ -432,14 +444,14 @@ void UNI(vector<Process> allProcesses, string name){
 				// Otherwise, the process is in ready state
 				now->waiting_time++;
 				summary.avg_wait_time++;
-				cout << "ready 0";
+				VERBOSE cout << "ready 0";
 			}
 		}
 		if(IO) summary.io_util_time++; // Utilize I/O
 
 		// All processes are terminated
 		if(TERMINATED == true) {
-			cout << endl;
+			VERBOSE cout << endl;
 			int sz = allProcesses.size();
 			summary.gather(sz, timestamp);
 			printInfo(name, allProcesses, summary);
@@ -469,23 +481,149 @@ void UNI(vector<Process> allProcesses, string name){
 				cur_process = nowIdx;
 			}
 		}
-		cout << endl;
+		VERBOSE cout << endl;
 		timestamp++;
 	}
 }
 
 // Shortest Job First
-void SJF(vector<Process> allProcesses){
-	
+void SJF(vector<Process> allProcesses, string name){
+	// Priority Queue for Ready Time and Process Index
+	priority_queue<pair<int,int>, vector<pair<int,int> >, greater<pair<int,int> > > readyQueue;
+	// Init SummaryData
+	SummaryData summary = SummaryData();
+	// No process is running right now
+	int cur_process = -1;
+	// Keep track of the unstarted processes
+	int pt = 0;
+	int timestamp = 0;
+	while(1){
+		// Flag indicating that every process is terminated
+		bool TERMINATED = true;
+		// Check status for all processes
+		// Make one move
+		VERBOSE printf("Before cycle   %d:", timestamp);
+		bool IO = false;
+		for(int i = 0; i < allProcesses.size(); i++){
+			Process* now = &allProcesses[i];
+			//cout << "sum: " << now->states[0] << " " << now->states[1] << " " << now->states[2] << endl;
+			VERBOSE cout << "    ";
+			// Not Created
+			if(now->cur_state == -1){
+				VERBOSE cout << "unstarted 0";
+				TERMINATED = false;
+				continue;
+			}
+			// Terminated
+			if(now->cur_state == 3){
+				VERBOSE cout << "terminated 0";
+				if(now->finish_time == -1){
+					now->finish_time = timestamp-1;
+					summary.avg_turn_time += now->finish_time-now->A_;
+				}
+				continue;
+			}
+
+			// If process is running or blocking
+			TERMINATED = false;
+			int cur_state = now->cur_state;
+			if(cur_state == 1){
+				VERBOSE cout << "running "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
+				now->running_time++;
+				summary.cpu_util_time++; // Utilize CPU
+				if(now->states[cur_state] == 0){
+					// The current cpu burst time is reached
+					if(now->running_time == allProcesses[i].C_){
+						// Terminate this process
+						now->cur_state = 3;
+					} else {
+						// Blocking
+						now->cur_state = 2;
+					}
+					// No process is running
+					cur_process = -1;
+				}
+			} else if(cur_state == 2){
+				VERBOSE cout << "blocked "; 
+				VERBOSE cout << (now->states)[cur_state];
+				(now->states)[cur_state]--;
+				now->io_time++;
+				IO = true; // Some process is waiting for IO
+				if(now->states[cur_state] == 0){
+					// Go to the ready list
+					now->cur_state = 0;
+					readyQueue.push(make_pair(now->C_-now->running_time, now->idx_));
+				}
+			} else{
+				// Otherwise, the process is in ready state
+				now->waiting_time++;
+				summary.avg_wait_time++;
+				VERBOSE cout << "ready 0";
+			}
+		}
+		if(IO) summary.io_util_time++; // Utilize I/O
+
+		// All processes are terminated
+		if(TERMINATED == true) {
+			VERBOSE cout << endl;
+			int sz = allProcesses.size();
+			summary.gather(sz, timestamp);
+			printInfo(name, allProcesses, summary);
+			break;
+		}
+
+		// Add processes into ready list if they are created at this time
+		while(pt < allProcesses.size() && allProcesses[pt].A_ == timestamp){
+			// cout << "add" << allProcesses[pt].A_ << " " << allProcesses[pt].B_ << " " << allProcesses[pt].C_ << " " << allProcesses[pt].M_ << endl;
+			allProcesses[pt].cur_state = 0;
+			// The shorter the remaining time, the earlier it should be processed
+			int rem = allProcesses[pt].C_;
+			readyQueue.push(make_pair(rem, allProcesses[pt].idx_));
+			pt++;
+		}
+
+		// No process is running, add a process that is ready
+		if(cur_process == -1){
+			// No process is ready
+			if(!readyQueue.empty()) {
+				int nowIdx = readyQueue.top().second; readyQueue.pop();
+				Process* now = &allProcesses[nowIdx];
+				// cout << now.A_ << " " << now.B_ << " " << now.C_ << " " << now.M_ << endl;
+				int cpu_burst = min(now->C_-now->running_time, randomMod_feed(now->B_));
+				int io_burst = now->M_ * cpu_burst;
+				now->states[1] = cpu_burst;
+				now->states[2] = io_burst;
+				now->cur_state = 1;
+				cur_process = nowIdx;
+			}
+		}
+		VERBOSE cout << endl;
+		timestamp++;
+	}
 }
 
-int main(){
+int main(int argc, char* argv[]){
+	// Read file and Verbose
+	verbose = false;
+	int arg = 1;
+	char* filePath;
+	while(arg < argc){
+		if(strcmp(argv[arg],"--verbose") == 0){
+			verbose = true;
+		}
+		else filePath = argv[arg];
+		arg++;
+	}
 	vector<Process> allProcesses;
 	// Input the process tuples
+	freopen(filePath, "r", stdin);
 	int n;
 	cin >> n;
 	string line;
 	getline(cin,line);
+	fclose(stdin);
 	stringstream ss(line);
 	string tmp = "";
 	for(int i = 0; i < n; i++){
@@ -518,15 +656,16 @@ int main(){
 		allProcesses[i].idx_ = i; // Re-indexing
 	}
 	cout << endl;
-	printf("\nThis detailed printout gives the state and remaining burst for each process\n");
+	VERBOSE printf("\nThis detailed printout gives the state and remaining burst for each process\n");
 	freopen("random-numbers", "r", stdin);
 	int num = 0;
 	while(cin >> num){
 		randomNums.push(num);
 	}
 	fclose(stdin);
-	// FCFS(allProcesses, "First Come First Served");
-	// RR(allProcesses, "Round Robbin", 2);
-	// UNI(allProcesses, "Uniprogramming");
+	//FCFS(allProcesses, "First Come First Served");
+	//RR(allProcesses, "Round Robbin", 2);
+	//UNI(allProcesses, "Uniprogramming");
+	SJF(allProcesses, "Shortest Job First");
 	return 0;
 }
